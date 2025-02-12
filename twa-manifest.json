@@ -1,0 +1,26 @@
+{
+  "name": "Game Snake",
+  "short_name": "Snake Game",
+  "startUrl": "http://localhost:5500/",
+  "host": "http://localhost:5500/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTZv9Ast_PllctL7eUMxiqYj4_l3eqWd1ol68UqK4RnDZKwZvZGCtxcpaghydeLJ3LytqM&usqp=CAU",
+  "icons": [
+    {
+      "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTZv9Ast_PllctL7eUMxiqYj4_l3eqWd1ol68UqK4RnDZKwZvZGCtxcpaghydeLJ3LytqM&usqp=CAU",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTZv9Ast_PllctL7eUMxiqYj4_l3eqWd1ol68UqK4RnDZKwZvZGCtxcpaghydeLJ3LytqM&usqp=CAU",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+
+
+

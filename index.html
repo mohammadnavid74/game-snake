@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="fa">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>بازی کرم</title>
+    <link rel="manifest" href="/manifest.json" />
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("/service-worker.js")
+          .then((registration) => {
+            console.log(
+              "Service Worker registered with scope:",
+              registration.scope
+            );
+          })
+          .catch((error) => {
+            console.error("Service Worker registration failed:", error);
+          });
+      }
+    </script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f4f4f4;
+      }
+
+      @media (max-width: 600px) {
+        body {
+          flex-direction: column;
+        }
+        canvas {
+          width: 100%;
+          height: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      style="
+        width: 400px;
+        height: 455px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        style="border-bottom: 1px solid black; width: 100%; text-align: center"
+      >
+        <h1>بازی کرم</h1>
+      </div>
+      <div>
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+      </div>
+      <div
+        id="scoreBoard"
+        style="text-align: center; font-size: 20px; margin-top: 10px"
+      >
+        امتیاز: <span id="score">0</span>
+      </div>
+    </div>
+
+    <script>
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+
+      const scale = 18;
+      const rows = canvas.height / scale;
+      const columns = canvas.width / scale;
+
+      let snake;
+      let food;
+      let direction = "right";
+      let score = 0;
+      let speed = 80;
+
+      let headImage = new Image();
+      headImage.src = "./icons/snake.png";
+
+      const eatSound = new Audio("./sounds/eat.mp3");
+      const crashSound = new Audio("./sounds/crash.mp3");
+
+      (function setup() {
+        snake = new Snake();
+        food = new Food();
+        gameInterval = setInterval(update, speed);
+
+        window.addEventListener("keydown", (e) => {
+          const newDirection = e.key.replace("Arrow", "").toLowerCase();
+          snake.changeDirection(newDirection);
+        });
+
+        window.addEventListener("touchstart", (e) => {
+          const touch = e.touches[0];
+          const x = touch.clientX - canvas.offsetLeft;
+          const y = touch.clientY - canvas.offsetTop;
+          handleMobileControl(x, y);
+        });
+      })();
+
+      function update() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        snake.move();
+        if (snake.eat(food)) {
+          food = new Food();
+          score++;
+          updateScore();
+          speed = Math.max(50, speed - 2);
+          clearInterval(gameInterval);
+          gameInterval = setInterval(update, speed);
+          eatSound.play();
+        }
+
+        snake.draw();
+        food.draw();
+
+        if (snake.checkCollision()) {
+          crashSound.play();
+          snake.reset();
+          score = 0;
+          updateScore();
+        }
+      }
+
+      function updateScore() {
+        document.getElementById("score").textContent = score;
+      }
+
+      function handleMobileControl(x, y) {
+        const cellX = Math.floor(x / scale);
+        const cellY = Math.floor(y / scale);
+
+        if (cellX > snake.snakeArray[0].x) {
+          snake.changeDirection("right");
+        } else if (cellX < snake.snakeArray[0].x) {
+          snake.changeDirection("left");
+        } else if (cellY > snake.snakeArray[0].y) {
+          snake.changeDirection("down");
+        } else if (cellY < snake.snakeArray[0].y) {
+          snake.changeDirection("up");
+        }
+      }
+
+      function Snake() {
+        this.snakeArray = [{ x: 10, y: 10 }];
+        this.length = 1;
+
+        this.draw = function () {
+          this.snakeArray.forEach((part, index) => {
+            const x = part.x * scale;
+            const y = part.y * scale;
+
+            const headSize = scale * 1.5;
+
+            if (index === 0) {
+              ctx.drawImage(
+                headImage,
+                x - (headSize - scale) / 2,
+                y - (headSize - scale) / 2,
+                headSize,
+                headSize
+              );
+            } else {
+              ctx.fillStyle = "green";
+              ctx.beginPath();
+              ctx.arc(x + scale / 2, y + scale / 2, scale / 2, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          });
+        };
+
+        this.move = function () {
+          const head = { ...this.snakeArray[0] };
+
+          if (direction === "right") head.x++;
+          if (direction === "left") head.x--;
+          if (direction === "up") head.y--;
+          if (direction === "down") head.y++;
+
+          this.snakeArray.unshift(head);
+          if (this.snakeArray.length > this.length) {
+            this.snakeArray.pop();
+          }
+        };
+
+        this.changeDirection = function (newDirection) {
+          if (newDirection === "right" && direction !== "left")
+            direction = "right";
+          if (newDirection === "left" && direction !== "right")
+            direction = "left";
+          if (newDirection === "up" && direction !== "down") direction = "up";
+          if (newDirection === "down" && direction !== "up") direction = "down";
+        };
+
+        this.eat = function (food) {
+          if (
+            this.snakeArray[0].x === food.x &&
+            this.snakeArray[0].y === food.y
+          ) {
+            this.length++;
+            return true;
+          }
+          return false;
+        };
+
+        this.checkCollision = function () {
+          const head = this.snakeArray[0];
+
+          if (head.x < 0) {
+            head.x = columns - 1;
+          } else if (head.x >= columns) {
+            head.x = 0;
+          }
+
+          if (head.y < 0) {
+            head.y = rows - 1;
+          } else if (head.y >= rows) {
+            head.y = 0;
+          }
+
+          for (let i = 1; i < this.snakeArray.length; i++) {
+            if (
+              this.snakeArray[i].x === head.x &&
+              this.snakeArray[i].y === head.y
+            ) {
+              return true;
+            }
+          }
+
+          return false;
+        };
+
+        this.reset = function () {
+          this.snakeArray = [{ x: 10, y: 10 }];
+          this.length = 1;
+          direction = "right";
+        };
+      }
+
+      function Food() {
+        this.x = Math.floor(Math.random() * columns);
+        this.y = Math.floor(Math.random() * rows);
+
+        this.draw = function () {
+          ctx.fillStyle = "red";
+          ctx.beginPath();
+          ctx.arc(
+            this.x * scale + scale / 2,
+            this.y * scale + scale / 2,
+            scale / 2,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+        };
+      }
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("/service-worker.js")
+          .then((registration) => {
+            console.log(
+              "Service Worker registered with scope:",
+              registration.scope
+            );
+          })
+          .catch((error) => {
+            console.error("Service Worker registration failed:", error);
+          });
+      }
+    </script>
+
+    <script>
+      self.addEventListener("install", (event) => {
+        event.waitUntil(
+          caches.open("snake-game-cache").then((cache) => {
+            return cache.addAll([
+              "/",
+              "/index.html",
+              "/snake.js",
+              "/icons/snake.png",
+              "/sounds/eat.mp3",
+              "/sounds/crash.mp3",
+            ]);
+          })
+        );
+      });
+
+      self.addEventListener("fetch", (event) => {
+        event.respondWith(
+          caches.match(event.request).then((response) => {
+            return response || fetch(event.request);
+          })
+        );
+      });
+    </script>
+  </body>
+</html>
